@@ -18,7 +18,8 @@ router.delete('/delete', Authorization, UserController.removeUser)
 router.post('/lists/addMovie', UserController.addMovieToList);
 router.post('/lists/removeMovie', UserController.removeMovieFromList);
 router.post('/lists', UserController.getListsForUser);
-
+router.post('/forgot-password', UserController.forgotPassword);
+router.post('/reset-password', UserController.resetPassword);
 
 
 // Export the Router

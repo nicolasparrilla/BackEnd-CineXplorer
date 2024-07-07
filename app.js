@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 var express = require('express');
 var cookieParser = require('cookie-parser');
 var bluebird = require('bluebird');
@@ -15,7 +17,7 @@ app.use(cookieParser());
 
 // Middleware de CORS
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: 'http://localhost:3001',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Métodos permitidos
   allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token'], // Encabezados permitidos
 }));

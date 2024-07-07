@@ -1,4 +1,7 @@
 var UserService = require('../services/user.service');
+const User = require('../models/User.model');
+const nodemailer = require('nodemailer');
+const bcrypt = require('bcryptjs');
 
 // Saving the context of this module inside the _the variable
 _this = this;
@@ -150,5 +153,65 @@ exports.getListsForUser = async function (req, res, next) {
         return res.status(200).json({ status: 200, data: lists, message: "Successfully Retrieved Lists" });
     } catch (e) {
         return res.status(400).json({ status: 400, message: e.message });
+    }
+};
+
+// Controlador para manejar la solicitud de recuperación de contraseña
+exports.forgotPassword = async function (req, res) {
+    const { email } = req.body;
+    try {
+        if (!email) {
+            return res.status(400).json({ message: 'El correo electrónico es requerido' });
+        }
+        
+        console.log("Buscando usuario con email:", email);
+        const user = await User.findOne({ email });
+        
+        if (!user) {
+            console.log("Usuario no encontrado");
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+        
+        console.log("Usuario encontrado, generando token");
+        const resetToken = UserService.generateResetToken(user);
+        
+        console.log("Enviando correo de recuperación");
+        await UserService.sendResetEmail(email, resetToken);
+        
+        res.status(200).json({ message: 'Correo de recuperación enviado' });
+    } catch (error) {
+        console.error("Error en forgotPassword:", error);
+        res.status(500).json({ message: 'Error en la solicitud de recuperación de contraseña', error: error.message });
+    }
+};
+
+// Controlador para manejar la solicitud de restablecimiento de contraseña
+exports.resetPassword = async function (req, res) {
+    const { token, newPassword } = req.body;
+    try {
+        // Verificar el token
+        const userId = UserService.verifyResetToken(token);
+        if (!userId) {
+            return res.status(400).json({ message: 'Token inválido o expirado' });
+        }
+
+        // Hashear la nueva contraseña
+        const hashedPassword = bcrypt.hashSync(newPassword, 8);
+
+        // Actualizar la contraseña del usuario
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { password: hashedPassword },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        res.status(200).json({ message: 'Contraseña actualizada exitosamente' });
+    } catch (error) {
+        console.error('Error en resetPassword:', error);
+        res.status(500).json({ message: 'Error en el restablecimiento de contraseña', error: error.message });
     }
 };

@@ -1,7 +1,9 @@
-// Gettign the Newly created Mongoose Model we just created 
-var User = require('../models/User.model');
-var bcrypt = require('bcryptjs');
-var jwt = require('jsonwebtoken');
+const User = require('../models/User.model');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+const sgTransport = require('nodemailer-sendgrid-transport');
+
 
 // Saving the context of this module inside the _the variable
 _this = this
@@ -191,5 +193,72 @@ exports.checkDuplicateMovie = async function (userId, listId, movieId) {
         }
     } catch (e) {
         throw Error("Error while checking duplicate movie");
+    }
+};
+
+
+// Configura nodemailer para usar SendGrid
+const transporter = nodemailer.createTransport(sgTransport({
+    auth: {
+        api_key: process.env.SENDGRID_API_KEY
+    }
+}));
+
+// Generar token de recuperación
+exports.generateResetToken = (user) => {
+    const payload = { id: user._id };
+    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+};
+
+/*
+// Enviar correo electrónico con el enlace de recuperación
+exports.sendResetEmail = async (email, token) => {
+    const resetLink = `http://localhost:3000/reset-password?token=${token}`;
+    const mailOptions = {
+        from: 'cinexplorer@outlook.com',
+        to: email,
+        subject: 'Recuperación de contraseña',
+        text: `Hacé clic en el siguiente enlace para recuperar tu contraseña: ${resetLink}`,
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log("Correo enviado exitosamente");
+    } catch (error) {
+        console.error("Error al enviar el correo:", error);
+        throw error;
+    }
+};
+*/
+
+exports.sendResetEmail = async (email, token) => {
+    const resetLink = `http://localhost:3000/recupero?token=${token}`;
+    const mailOptions = {
+        from: 'cinexplorer@outlook.com',
+        to: email,
+        subject: 'Recuperación de contraseña',
+        text: `Hacé clic en el siguiente enlace para recuperar tu contraseña: ${resetLink}`,
+        html: `<p>Hacé clic en el siguiente enlace para recuperar tu contraseña:</p><a href="${resetLink}">${resetLink}</a>`
+    };
+
+    try {
+        console.log("Intentando enviar correo a:", email);
+        const info = await transporter.sendMail(mailOptions);
+        console.log("Correo enviado exitosamente. ID del mensaje:", info.messageId);
+        return info;
+    } catch (error) {
+        console.error("Error al enviar el correo:", error);
+        throw error;
+    }
+};
+
+// Verificar token de recuperación
+exports.verifyResetToken = (token) => {
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        return decoded.id;
+    } catch (error) {
+        console.error('Error al verificar el token:', error);
+        return null;
     }
 };
