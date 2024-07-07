@@ -1,8 +1,9 @@
-const User = require('../models/User.model');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
-const sgTransport = require('nodemailer-sendgrid-transport');
+// Gettign the Newly created Mongoose Model we just created 
+var User = require('../models/User.model');
+var bcrypt = require('bcryptjs');
+var jwt = require('jsonwebtoken');
+var nodemailer = require('nodemailer');
+var sgTransport = require('nodemailer-sendgrid-transport');
 
 
 // Saving the context of this module inside the _the variable
@@ -32,13 +33,12 @@ exports.getUsers = async function (query, page, limit) {
 
 exports.createUser = async function (user) {
     try {
-        // Primero, verifica si el email ya está registrado
         let existingUser = await User.findOne({ email: user.email });
         if (existingUser) {
             throw new Error("El email ya está registrado");
         }
 
-        // Si el email no está registrado, procede a crear el nuevo usuario
+        // Creating a new Mongoose Object by using the new keyword
         var hashedPassword = bcrypt.hashSync(user.password, 8);
 
         var newUser = new User({
@@ -48,16 +48,16 @@ exports.createUser = async function (user) {
             password: hashedPassword
         });
 
-        // Guardar el nuevo usuario
+        // Saving the User
         var savedUser = await newUser.save();
         var token = jwt.sign({ id: savedUser._id }, process.env.SECRET, {
-            expiresIn: 86400 // expira en 24 horas
+            expiresIn: 86400 // expires in 24 hours
         });
         return token;
     } catch (e) {
-        // Devolver un mensaje de error describiendo la razón
+        // return a Error message describing the reason 
         if (e.message === "El email ya está registrado") {
-            throw e; // Re-lanzar el error específico
+            throw e;
         } else {
             console.log(e);
             throw new Error("Error al crear el usuario");
@@ -136,7 +136,6 @@ exports.loginUser = async function (user) {
 }
 
 
-// Function to add a movie to a list
 exports.addMovieToList = async function (userId, listId, movieId) {
     try {
         var user = await User.findById(userId);
@@ -153,7 +152,7 @@ exports.addMovieToList = async function (userId, listId, movieId) {
     }
 };
 
-// Function to remove a movie from a list
+
 exports.removeMovieFromList = async function (userId, listId, movieId) {
     try {
         var user = await User.findById(userId);
@@ -170,7 +169,7 @@ exports.removeMovieFromList = async function (userId, listId, movieId) {
     }
 };
 
-// Function to get lists for a user
+
 exports.getListsForUser = async function (userId) {
     try {
         var user = await User.findById(userId);
@@ -180,13 +179,12 @@ exports.getListsForUser = async function (userId) {
     }
 };
 
-// Function to check if a movie already exists in a list
+
 exports.checkDuplicateMovie = async function (userId, listId, movieId) {
     try {
         var user = await User.findById(userId);
         var list = user.lists.find(list => list.id === listId);
         if (list) {
-            // Check if movieId already exists in idMovies array
             return list.idMovies.includes(movieId);
         } else {
             throw Error("List not found");
@@ -197,39 +195,18 @@ exports.checkDuplicateMovie = async function (userId, listId, movieId) {
 };
 
 
-// Configura nodemailer para usar SendGrid
 const transporter = nodemailer.createTransport(sgTransport({
     auth: {
         api_key: process.env.SENDGRID_API_KEY
     }
 }));
 
-// Generar token de recuperación
+
 exports.generateResetToken = (user) => {
     const payload = { id: user._id };
     return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 };
 
-/*
-// Enviar correo electrónico con el enlace de recuperación
-exports.sendResetEmail = async (email, token) => {
-    const resetLink = `http://localhost:3000/reset-password?token=${token}`;
-    const mailOptions = {
-        from: 'cinexplorer@outlook.com',
-        to: email,
-        subject: 'Recuperación de contraseña',
-        text: `Hacé clic en el siguiente enlace para recuperar tu contraseña: ${resetLink}`,
-    };
-
-    try {
-        await transporter.sendMail(mailOptions);
-        console.log("Correo enviado exitosamente");
-    } catch (error) {
-        console.error("Error al enviar el correo:", error);
-        throw error;
-    }
-};
-*/
 
 exports.sendResetEmail = async (email, token) => {
     const resetLink = `http://localhost:3000/recupero?token=${token}`;
@@ -252,7 +229,7 @@ exports.sendResetEmail = async (email, token) => {
     }
 };
 
-// Verificar token de recuperación
+
 exports.verifyResetToken = (token) => {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);

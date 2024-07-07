@@ -39,7 +39,7 @@ exports.getUsersByMail = async function (req, res, next) {
 }
 
 exports.createUser = async function (req, res, next) {
-    // Req.Body contiene los valores del formulario
+    // Req.Body contains the form submit values.
     console.log("llegue al controller", req.body);
     var User = {
         name: req.body.name,
@@ -48,23 +48,21 @@ exports.createUser = async function (req, res, next) {
     };
 
     try {
-        // Llamando a la función de servicio con el nuevo objeto del cuerpo de la solicitud
+        // Calling the Service function with the new object from the Request Body
         var createdUser = await UserService.createUser(User);
         return res.status(201).json({ createdUser, message: "Usuario creado exitosamente" });
     } catch (e) {
-        // Devolver un mensaje de error con el código y el mensaje de error
+        //Return an Error Response Message with Code and the Error Message.
         console.log(e);
         return res.status(400).json({ status: 400, message: e.message });
     }
 };
 
 exports.updateUser = async function (req, res, next) {
-
     // Id is necessary for the update
     if (!req.body.name) {
         return res.status(400).json({status: 400., message: "Name be present"})
     }
-
     
     var User = {
        
@@ -82,7 +80,6 @@ exports.updateUser = async function (req, res, next) {
 }
 
 exports.removeUser = async function (req, res, next) {
-
     var id = req.body.id;
     try {
         var deleted = await UserService.deleteUser(id);
@@ -113,14 +110,11 @@ exports.loginUser = async function (req, res, next) {
     }
 }
 
-
-// Controller to add a movie to a list
 exports.addMovieToList = async function (req, res, next) {
     var userId = req.body.userId;
     var listId = req.body.listId;
     var movieId = req.body.movieId;
     try {
-        // Primero, verifica si el movieId ya está en la lista
         var isDuplicate = await UserService.checkDuplicateMovie(userId, listId, movieId);
         if (!isDuplicate) {
             var list = await UserService.addMovieToList(userId, listId, movieId);
@@ -132,7 +126,6 @@ exports.addMovieToList = async function (req, res, next) {
     }
 };
 
-// Controller to remove a movie from a list
 exports.removeMovieFromList = async function (req, res, next) {
     var userId = req.body.userId;
     var listId = req.body.listId;
@@ -145,7 +138,6 @@ exports.removeMovieFromList = async function (req, res, next) {
     }
 };
 
-// Controller to get lists for a user
 exports.getListsForUser = async function (req, res, next) {
     var userId = req.body.userId;
     try {
@@ -156,7 +148,6 @@ exports.getListsForUser = async function (req, res, next) {
     }
 };
 
-// Controlador para manejar la solicitud de recuperación de contraseña
 exports.forgotPassword = async function (req, res) {
     const { email } = req.body;
     try {
@@ -185,20 +176,16 @@ exports.forgotPassword = async function (req, res) {
     }
 };
 
-// Controlador para manejar la solicitud de restablecimiento de contraseña
 exports.resetPassword = async function (req, res) {
     const { token, newPassword } = req.body;
     try {
-        // Verificar el token
         const userId = UserService.verifyResetToken(token);
         if (!userId) {
             return res.status(400).json({ message: 'Token inválido o expirado' });
         }
 
-        // Hashear la nueva contraseña
         const hashedPassword = bcrypt.hashSync(newPassword, 8);
 
-        // Actualizar la contraseña del usuario
         const updatedUser = await User.findByIdAndUpdate(
             userId,
             { password: hashedPassword },
