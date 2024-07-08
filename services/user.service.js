@@ -111,7 +111,6 @@ exports.deleteUser = async function (id) {
 
 
 exports.loginUser = async function (user) {
-
     // Creating a new Mongoose Object by using the new keyword
     try {
         // Find the User 
